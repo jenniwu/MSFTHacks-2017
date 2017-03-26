@@ -5,7 +5,6 @@ An recipe recommender bot for the Microsoft Bot Framework.
 // This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
-
 var restify = require('restify');
 var builder = require('botbuilder');
 var unirest = require('unirest');
@@ -13,134 +12,124 @@ var validUrl = require('valid-url');
 var captionService = require('./caption-service');
 var needle = require('needle');
 
-"use strict";
-var documentClient = require("documentdb").DocumentClient;
-var config = require("./config");
+// "use strict";
+// var documentClient = require("documentdb").DocumentClient;
+// var config = require("./config");
 var url = require('url');
 
 //=========================================================
 // Database Setup
 //=========================================================
 
-// Setup DocumentDB 
-var client = new documentClient(config.endpoint, { "masterKey": config.primaryKey });
+// // Setup DocumentDB 
+// var client = new documentClient(config.endpoint, { "masterKey": config.primaryKey });
 
-// Create Node database
-var HttpStatusCodes = { NOTFOUND: 404 };
-var databaseUrl = `dbs/${config.database.id}`;
-var collectionUrl = `${databaseUrl}/colls/${config.collection.id}`;
-// var databaseDefinition = {"id": "reciperdatabase"}
-// var collectionDefinition = {"id": "Users"}
-// var documentDefinition = {
-//     "id": "user",
-//     "name": "firstName",
-//     "favourite": {
-//         "recipeTitle": "someurl",
-//         "anotherrecipe": "someurl"
-//     }
+// // Create Node database
+// var HttpStatusCodes = { NOTFOUND: 404 };
+// var databaseUrl = `dbs/${config.database.id}`;
+// var collectionUrl = `${databaseUrl}/colls/${config.collection.id}`;
+
+// // Return database if it exists, else create the database
+// function getDatabase() {
+//     console.log(`Getting database:\n${config.database.id}\n`);
+
+//     return new Promise((resolve, reject) => {
+//         client.readDatabase(databaseUrl, (err, result) => {
+//             if (err) {
+//                 if (err.code == HttpStatusCodes.NOTFOUND) {
+//                     client.createDatabase(config.database, (err, created) => {
+//                         if (err) reject(err)
+//                         else resolve(created);
+//                     });
+//                 } else {
+//                     reject(err);
+//                 }
+//             } else {
+//                 resolve(result);
+//             }
+//         });
+//     });
 // }
 
-// Return database if it exists, else create the database
-function getDatabase() {
-    console.log(`Getting database:\n${config.database.id}\n`);
+// function getCollection() {
+//     console.log(`Getting collection:\n${config.collection.id}\n`);
 
-    return new Promise((resolve, reject) => {
-        client.readDatabase(databaseUrl, (err, result) => {
-            if (err) {
-                if (err.code == HttpStatusCodes.NOTFOUND) {
-                    client.createDatabase(config.database, (err, created) => {
-                        if (err) reject(err)
-                        else resolve(created);
-                    });
-                } else {
-                    reject(err);
-                }
-            } else {
-                resolve(result);
-            }
-        });
-    });
-}
+//     return new Promise((resolve, reject) => {
+//         client.readCollection(collectionUrl, (err, result) => {
+//             if (err) {
+//                 if (err.code == HttpStatusCodes.NOTFOUND) {
+//                     client.createCollection(databaseUrl, config.collection, { offerThroughput: 400 }, (err, created) => {
+//                         if (err) reject(err)
+//                         else resolve(created);
+//                     });
+//                 } else {
+//                     reject(err);
+//                 }
+//             } else {
+//                 resolve(result);
+//             }
+//         });
+//     });
+// }
 
-function getCollection() {
-    console.log(`Getting collection:\n${config.collection.id}\n`);
+// function getDocument(document) {
+//     let documentUrl = `${collectionUrl}/docs/${document.id}`;
+//     console.log(`Getting document:\n${document.id}\n`);
 
-    return new Promise((resolve, reject) => {
-        client.readCollection(collectionUrl, (err, result) => {
-            if (err) {
-                if (err.code == HttpStatusCodes.NOTFOUND) {
-                    client.createCollection(databaseUrl, config.collection, { offerThroughput: 400 }, (err, created) => {
-                        if (err) reject(err)
-                        else resolve(created);
-                    });
-                } else {
-                    reject(err);
-                }
-            } else {
-                resolve(result);
-            }
-        });
-    });
-}
+//     return new Promise((resolve, reject) => {
+//         client.readDocument(documentUrl, { partitionKey: document.district }, (err, result) => {
+//             if (err) {
+//                 if (err.code == HttpStatusCodes.NOTFOUND) {
+//                     client.createDocument(collectionUrl, document, (err, created) => {
+//                         if (err) reject(err)
+//                         else resolve(created);
+//                     });
+//                 } else {
+//                     reject(err);
+//                 }
+//             } else {
+//                 resolve(result);
+//             }
+//         });
+//     });
+// };
 
-function getDocument(document) {
-    let documentUrl = `${collectionUrl}/docs/${document.id}`;
-    console.log(`Getting document:\n${document.id}\n`);
+// function queryCollection() {
+//     console.log(`Querying collection through index:\n${config.collection.id}`);
 
-    return new Promise((resolve, reject) => {
-        client.readDocument(documentUrl, { partitionKey: document.district }, (err, result) => {
-            if (err) {
-                if (err.code == HttpStatusCodes.NOTFOUND) {
-                    client.createDocument(collectionUrl, document, (err, created) => {
-                        if (err) reject(err)
-                        else resolve(created);
-                    });
-                } else {
-                    reject(err);
-                }
-            } else {
-                resolve(result);
-            }
-        });
-    });
-};
+//     return new Promise((resolve, reject) => {
+//         client.queryDocuments(
+//             collectionUrl,
+//             'SELECT VALUE r.favourites FROM root r WHERE r.id = "userid"'
+//         ).toArray((err, results) => {
+//             if (err) reject(err)
+//             else {
+//                 for (var queryResult of results) {
+//                     let resultString = JSON.stringify(queryResult);
+//                     console.log(`\tQuery returned ${resultString}`);
+//                 }
+//                 console.log();
+//                 resolve(results);
+//             }
+//         });
+//     });
+// };
 
-function queryCollection() {
-    console.log(`Querying collection through index:\n${config.collection.id}`);
+// function exit(message) {
+//     console.log(message);
+//     console.log('Press any key to exit');
+//     process.stdin.setRawMode(true);
+//     process.stdin.resume();
+//     process.stdin.on('data', process.exit.bind(process, 0));
+// }
 
-    return new Promise((resolve, reject) => {
-        client.queryDocuments(
-            collectionUrl,
-            'SELECT VALUE r.favourites FROM root r WHERE r.id = "userid"'
-        ).toArray((err, results) => {
-            if (err) reject(err)
-            else {
-                for (var queryResult of results) {
-                    let resultString = JSON.stringify(queryResult);
-                    console.log(`\tQuery returned ${resultString}`);
-                }
-                console.log();
-                resolve(results);
-            }
-        });
-    });
-};
-
-function exit(message) {
-    console.log(message);
-    console.log('Press any key to exit');
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.on('data', process.exit.bind(process, 0));
-}
-
-getDatabase()
-.then(() => getCollection())
-.then(() => getDocument(config.documents.userid))
-.then(() => getDocument(config.documents.anotheruserid))
-.then(() => queryCollection())
-.then(() => { exit(`Completed successfully`); })
-.catch((error) => { exit(`Completed with error ${JSON.stringify(error)}`) });
+// getDatabase()
+// .then(() => getCollection())
+// .then(() => getDocument(config.documents.userid))
+// .then(() => getDocument(config.documents.anotheruserid))
+// .then(() => queryCollection())
+// .then(() => { exit(`Completed successfully`); })
+// .catch((error) => { exit(`Completed with error ${JSON.stringify(error)}`) });
 
 
 //=========================================================
@@ -179,9 +168,9 @@ bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
-    function (session, results) {
-        session.beginDialog('/getUser');
-    },
+    // function (session, results) {
+    //     session.beginDialog('/getUser');
+    // },
      function (session, results) {
         session.beginDialog('/askDiet');
     },
@@ -193,44 +182,44 @@ bot.dialog('/', [
     }
 ]);
 
-// Get users profile
-bot.dialog('/getUser', [
-    function (session) {
-        // Store the returned user page-scoped id (USER_ID) and page id
-        session.userData.userid = session.message.sourceEvent.sender.id;
-        session.userData.pageid = session.message.sourceEvent.recipient.id;
+// // Get users profile
+// bot.dialog('/getUser', [
+//     function (session) {
+//         // Store the returned user page-scoped id (USER_ID) and page id
+//         session.userData.userid = session.message.sourceEvent.sender.id;
+//         session.userData.pageid = session.message.sourceEvent.recipient.id;
 
-        // Let the user know we are 'working'
-        session.sendTyping();
-        // Get the users profile information from FB
-        request({
-            url: 'https://graph.facebook.com/v2.6/'+ session.userData.userid +'?fields=first_name,last_name,profile_pic,locale,timezone,gender',
-            qs: { access_token: process.env.FB_PAGE_ACCESS_TOKEN },
-            method: 'GET'
-        }, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-                // Parse the JSON returned from FB
-                body = JSON.parse(body);
-                // Save profile to database
-                // session.dialogData.userId = session.userData.userid;
-                session.dialogData.firstname = body.first_name;
+//         // Let the user know we are 'working'
+//         session.sendTyping();
+//         // Get the users profile information from FB
+//         request({
+//             url: 'https://graph.facebook.com/v2.6/'+ session.userData.userid +'?fields=first_name',
+//             qs: { access_token: process.env.FB_PAGE_ACCESS_TOKEN },
+//             method: 'GET'
+//         }, function(error, response, body) {
+//             if (!error && response.statusCode == 200) {
+//                 // Parse the JSON returned from FB
+//                 body = JSON.parse(body);
+//                 // Save profile to database
+//                 // session.dialogData.userId = session.userData.userid;
+//                 session.dialogData.firstname = body.first_name;
 
-                var userDetails = {
-                    userid: session.userData.userid,
-                    name: session.dialogData.firstname,
-                    favourites: []
-                }
+//                 var userDetails = {
+//                     userid: session.userData.userid,
+//                     name: session.dialogData.firstname,
+//                     favourites: []
+//                 }
 
-                getDocument(userDetails);
-            } else {
-                console.log(error);
-                console.log("Get user profile failed");
-            }
+//                 getDocument(userDetails);
+//             } else {
+//                 console.log(error);
+//                 console.log("Get user profile failed");
+//             }
             
-        session.beginDialog('/askDiet');
-        });
-    }
-]);
+//         session.endDialog();
+//         });
+//     }
+// ]);
 
 bot.dialog('/askItem', [
     function (session) {
@@ -247,7 +236,7 @@ bot.dialog('/askItem', [
             .catch(function (error) { handleErrorResponse(session, error); });
 
         } else {
-            var imageUrl = parseAnchorTag(session.message.text) || (validUrl.isUri(session.message.text) ? session.message.text : null);
+            var imageUrl = validUrl.isUri(session.message.text) ? session.message.text : null;
             if (imageUrl) {
                 captionService
                     .getCaptionFromUrl(imageUrl)
