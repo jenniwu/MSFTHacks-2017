@@ -48,10 +48,10 @@ bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
-    function (session, results) {
-        session.send('You entered ' + session.message.text + '.', results.response.text);
-        session.beginDialog('/askDiet');
-    },
+    // function (session, results) {
+    //     session.send('You entered ' + session.message.text + '.', results.response.text);
+    //     session.beginDialog('/askDiet');
+    // },
     function (session, results) {
         session.beginDialog('/askAllergy');
     },
@@ -68,8 +68,11 @@ bot.dialog('/askItem', [
         var stream = getImageStreamFromMessage(session.message);
         captionService
             .getCaptionFromStream(stream)
-            .then(function (caption) { handleSuccessResponse(session, caption); })
+            .then(function (caption) { 
+                handleSuccessResponse(session, caption); 
+            })
             .catch(function (error) { handleErrorResponse(session, error); });
+
         } else {
             var imageUrl = parseAnchorTag(session.message.text) || (validUrl.isUri(session.message.text) ? session.message.text : null);
             if (imageUrl) {
@@ -83,7 +86,6 @@ bot.dialog('/askItem', [
         }
     },
     function (session, results) {
-        ingredient = session.message.text;
         session.endDialogWithResult(results);
     }
 ]);
@@ -119,6 +121,9 @@ function getImageStreamFromMessage(message) {
 function handleSuccessResponse(session, caption) {
     if (caption) {
         session.send('I think it\'s ' + caption);
+        ingredient = caption;
+   //     session.userData.food = caption;
+        session.beginDialog('/askDiet');
     }
     else {
         session.send('Couldn\'t find a caption for this one');
@@ -133,6 +138,7 @@ function handleErrorResponse(session, error) {
 
 bot.dialog('/askDiet', [
     function (session) {
+        // session.send(ingredient);
         builder.Prompts.text(session, 'Do you have any dietary restrictions?');
     },
     function (session, results) {
