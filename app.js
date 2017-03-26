@@ -27,9 +27,6 @@ var intents = new builder.IntentDialog();
 //=========================================================
 // Bots Dialogs
 //=========================================================
-
-
-
 var diet ="";
 
 bot.dialog('/', [
@@ -77,5 +74,3 @@ bot.dialog('/askDiet', [
 //     console.log(result.status, result.headers, result.body);
 // });
 //  session.send(response.body);
-
-// });
