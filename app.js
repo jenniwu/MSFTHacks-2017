@@ -162,6 +162,9 @@ var intents = new builder.IntentDialog();
 var diet = "";
 var ingredient = "";
 var allergy = "";
+
+var moreItems = true;
+
 var cuisine = "";
 
 bot.dialog('/', [
@@ -171,6 +174,15 @@ bot.dialog('/', [
     // function (session, results) {
     //     session.beginDialog('/getUser');
     // },
+
+    // function (session) {
+    // //    while (moreItems == true) {
+    //         session.beginDialog('/anymoreItems');
+    // //    }   
+    // },
+    function (session) {
+        session.beginDialog('/askDiet');
+    },
      function (session, results) {
         session.beginDialog('/askDiet');
     },
@@ -223,7 +235,7 @@ bot.dialog('/', [
 
 bot.dialog('/askItem', [
     function (session) {
-        builder.Prompts.text(session, 'Hi! What\'s in your grocery basket? Upload an image and I\'ll find some food to make.');
+        builder.Prompts.attachment(session, 'Hi! What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
     },
     function(session) {
         if (hasImageAttachment(session)) {
@@ -251,6 +263,54 @@ bot.dialog('/askItem', [
         session.endDialogWithResult(results);
     }
 ]);
+
+// bot.dialog('/anymoreItems', [
+//     function (session) {
+//         builder.Prompts.attachment(session, 'Any more ingredients? (yes or no)');
+//     },
+//     function (session) {
+//             if (session.message.text == "no") {
+//                 anymoreItems = false;
+//                 session.endDialog();
+//             } else {
+//                 session.beginDialog('/askMoreItems');
+//                 session.endDialog();
+//             }
+//     }
+// ]);
+
+// bot.dialog('/askMoreItems', [
+//     function (session) {
+//      //   session.send('Upload another image and I\'ll build a recipe for you.');
+//         builder.Prompts.attachment(session, 'Upload another image and I\'ll build a recipe for you.');
+//     },
+//     function(session) {
+//         if (hasImageAttachment(session)) {
+//         var stream = getImageStreamFromMessage(session.message);
+//         captionService
+//             .getCaptionFromStream(stream)
+//             .then(function (caption) { 
+//                 handleSuccessResponse(session, caption); 
+//             })
+//             .catch(function (error) { handleErrorResponse(session, error); });
+
+//         } else {
+//             session.send("did we get here");
+//             var imageUrl = parseAnchorTag(session.message.text) || (validUrl.isUri(session.message.text) ? session.message.text : null);
+//             if (imageUrl) {
+//                 captionService
+//                     .getCaptionFromUrl(imageUrl)
+//                     .then(function (caption) { handleSuccessResponse(session, caption); })
+//                     .catch(function (error) { handleErrorResponse(session, error); });
+//             } else {
+//                 session.send('Did you upload an image? I\'m more of a visual person. Try sending me an image or an image URL');
+//             }
+//         }
+//     },
+//     function (session, results) {
+//         session.endDialogWithResult(results);
+//     }
+// ]);
 
 function hasImageAttachment(session) {
     return session.message.attachments.length > 0 &&
@@ -298,8 +358,11 @@ function handleErrorResponse(session, error) {
 }
 
 bot.dialog('/askDiet', [
+
+
     function (session, next) {
         builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
+
     },
     function (session, results) {
         diet = session.message.text.toLowerCase();
