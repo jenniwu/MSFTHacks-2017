@@ -259,7 +259,7 @@ bot.dialog('/getRecipe', [
     })}
     , 
     function (session, results) {
-        if(session.message.text == "No"){
+        if(session.message.text.toLowerCase() == "no"){
             session.send("Sorry we haven't found anything for you yet!");
             builder.Prompts.choice(session, 'What kind of food were you looking for?', "American|Chinese|Italian|Japanese|Mexican");
         } else{
@@ -269,7 +269,7 @@ bot.dialog('/getRecipe', [
         }
     }, 
     function (session, results) {
-        cuisine = session.message.text;
+        cuisine = session.message.text.toLowerCase();
         session.endDialog();
     }
 ]);
