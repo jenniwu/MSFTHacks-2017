@@ -5,13 +5,143 @@ An recipe recommender bot for the Microsoft Bot Framework.
 // This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
+
 var restify = require('restify');
 var builder = require('botbuilder');
 var unirest = require('unirest');
-var url = require('url');
 var validUrl = require('valid-url');
 var captionService = require('./caption-service');
 var needle = require('needle');
+
+"use strict";
+var documentClient = require("documentdb").DocumentClient;
+var config = require("./config");
+var url = require('url');
+
+//=========================================================
+// Database Setup
+//=========================================================
+
+// Setup DocumentDB 
+var client = new documentClient(config.endpoint, { "masterKey": config.primaryKey });
+
+// Create Node database
+var HttpStatusCodes = { NOTFOUND: 404 };
+var databaseUrl = `dbs/${config.database.id}`;
+var collectionUrl = `${databaseUrl}/colls/${config.collection.id}`;
+// var databaseDefinition = {"id": "reciperdatabase"}
+// var collectionDefinition = {"id": "Users"}
+// var documentDefinition = {
+//     "id": "user",
+//     "name": "firstName",
+//     "favourite": {
+//         "recipeTitle": "someurl",
+//         "anotherrecipe": "someurl"
+//     }
+// }
+
+// Return database if it exists, else create the database
+function getDatabase() {
+    console.log(`Getting database:\n${config.database.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readDatabase(databaseUrl, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createDatabase(config.database, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function getCollection() {
+    console.log(`Getting collection:\n${config.collection.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readCollection(collectionUrl, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createCollection(databaseUrl, config.collection, { offerThroughput: 400 }, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function getDocument(document) {
+    let documentUrl = `${collectionUrl}/docs/${document.id}`;
+    console.log(`Getting document:\n${document.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readDocument(documentUrl, { partitionKey: document.district }, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createDocument(collectionUrl, document, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+};
+
+function queryCollection() {
+    console.log(`Querying collection through index:\n${config.collection.id}`);
+
+    return new Promise((resolve, reject) => {
+        client.queryDocuments(
+            collectionUrl,
+            'SELECT VALUE r.favourites FROM root r WHERE r.id = "userid"'
+        ).toArray((err, results) => {
+            if (err) reject(err)
+            else {
+                for (var queryResult of results) {
+                    let resultString = JSON.stringify(queryResult);
+                    console.log(`\tQuery returned ${resultString}`);
+                }
+                console.log();
+                resolve(results);
+            }
+        });
+    });
+};
+
+function exit(message) {
+    console.log(message);
+    console.log('Press any key to exit');
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', process.exit.bind(process, 0));
+}
+
+getDatabase()
+.then(() => getCollection())
+.then(() => getDocument(config.documents.userid))
+.then(() => getDocument(config.documents.anotheruserid))
+.then(() => queryCollection())
+.then(() => { exit(`Completed successfully`); })
+.catch((error) => { exit(`Completed with error ${JSON.stringify(error)}`) });
+
 
 //=========================================================
 // Bot Setup
@@ -43,7 +173,10 @@ var intents = new builder.IntentDialog();
 var diet = "";
 var ingredient = "";
 var allergy = "";
+
 var moreItems = true;
+
+var cuisine = "";
 
 bot.dialog('/', [
     function (session) {
@@ -60,12 +193,58 @@ bot.dialog('/', [
     },
 
     function (session, results) {
+        session.beginDialog('/getUser');
+    },
+     function (session, results) {
+        session.beginDialog('/askDiet');
+    },
+    function (session, results) {
         session.beginDialog('/askAllergy');
     },
     function (session, results) {
         session.beginDialog('/getRecipe');
     }
 ]);
+
+// Get users profile
+bot.dialog('/getUser', [
+    function (session) {
+        // Store the returned user page-scoped id (USER_ID) and page id
+        session.userData.userid = session.message.sourceEvent.sender.id;
+        session.userData.pageid = session.message.sourceEvent.recipient.id;
+
+        // Let the user know we are 'working'
+        session.sendTyping();
+        // Get the users profile information from FB
+        request({
+            url: 'https://graph.facebook.com/v2.6/'+ session.userData.userid +'?fields=first_name,last_name,profile_pic,locale,timezone,gender',
+            qs: { access_token: process.env.FB_PAGE_ACCESS_TOKEN },
+            method: 'GET'
+        }, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                // Parse the JSON returned from FB
+                body = JSON.parse(body);
+                // Save profile to database
+                // session.dialogData.userId = session.userData.userid;
+                session.dialogData.firstname = body.first_name;
+
+                var userDetails = {
+                    userid: session.userData.userid,
+                    name: session.dialogData.firstname,
+                    favourites: []
+                }
+
+                getDocument(userDetails);
+            } else {
+                console.log(error);
+                console.log("Get user profile failed");
+            }
+            
+        session.beginDialog('/askDiet');
+        });
+    }
+]);
+
 bot.dialog('/askItem', [
     function (session) {
         builder.Prompts.attachment(session, 'Hi! What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
@@ -177,11 +356,14 @@ function handleSuccessResponse(session, caption) {
     if (caption) {
         session.send('I think it\'s ' + caption);
         ingredient = caption;
+<<<<<<< HEAD
    //     session.userData.food = caption;
+=======
+>>>>>>> origin/master
         session.endDialog();
     }
     else {
-        session.send('Couldn\'t find a caption for this one');
+        session.send('I\'m sorry, I couldn\'t find this item.');
     }
 
 }
@@ -192,49 +374,39 @@ function handleErrorResponse(session, error) {
 }
 
 bot.dialog('/askDiet', [
-    function (session) {
-        // for (var i = 0; i < ingredient.length; i++) {
-        //     session.send(ingredient[i]);
-        // }
-        // session.send(ingredient);
-        builder.Prompts.text(session, 'Do you have any dietary restrictions?');
+
+
+    function (session, next) {
+        builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
+
     },
     function (session, results) {
-        diet = session.message.text;
+        diet = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
 ]);
 
 bot.dialog('/askAllergy', [
     function (session) {
-        builder.Prompts.text(session, 'Do you have any allergies or intolerances?');
+        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
     function (session, results) {
-        allergy = session.message.text;
+        allergy = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
 ]);
 
 bot.dialog('/getRecipe', [
     function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy)
+    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=1")
     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
     .header("Accept", "application/json")
-    .end(function (result) {
-    console.log(result.status, result.headers, result.body);
-})}
+    .end(function (result){
+        console.log(result.body.results);
+        var title = result.body.results[0]["title"].split(" ").join("-");
+        var id = result.body.results[0]["id"].toString();
+        session.send("https://spoonacular.com/" + title + "-" + id);
+    })}  
 ]);
 
-// bot.dialog('/', function (session) {
-//     session.send("Hello World");
-//     session.send("Hi");
 
-//     // These code snippets use an open-source library. http://unirest.io/nodejs
-//     var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?fillIngredients=false&ingredients=apples%2Cflour%2Csugar&limitLicense=false&number=3&ranking=1")
-//     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
-//     .header("Accept", "application/json")
-//     .end(function (result) {
-//     console.log(result.status, result.headers, result.body);
-// });
-//  session.send(response.body);
-// ]);
