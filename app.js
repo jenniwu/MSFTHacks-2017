@@ -182,10 +182,6 @@ bot.dialog('/', [
     function (session, results) {
         session.beginDialog('/getUser');
     },
-    // function (session, results) {
-    //     session.send('You entered ' + session.message.text + '.', results.response.text);
-    //     session.beginDialog('/askDiet');
-    // },
     function (session, results) {
         session.beginDialog('/askAllergy');
     },
@@ -197,8 +193,6 @@ bot.dialog('/', [
 // Get users profile
 bot.dialog('/getUser', [
     function (session) {
-        console.log("=== DIALOG: GETPROFILE | STEP: 1/1 ====");
-
         // Store the returned user page-scoped id (USER_ID) and page id
         session.userData.userid = session.message.sourceEvent.sender.id;
         session.userData.pageid = session.message.sourceEvent.recipient.id;
@@ -225,14 +219,12 @@ bot.dialog('/getUser', [
                 }
 
                 getDocument(userDetails);
-
-                // Return to beginning
-                session.endDialogWithResult({ response: session.dialogData });
             } else {
-                // TODO: Handle errors
                 console.log(error);
                 console.log("Get user profile failed");
             }
+            
+        session.beginDialog('/askDiet');
         });
     }
 ]);
@@ -300,11 +292,10 @@ function handleSuccessResponse(session, caption) {
     if (caption) {
         session.send('I think it\'s ' + caption);
         ingredient = caption;
-   //     session.userData.food = caption;
-        session.beginDialog('/askDiet');
+        session.beginDialog('/getUser');
     }
     else {
-        session.send('Couldn\'t find a caption for this one');
+        session.send('I\'m sorry, I couldn\'t find this item.');
     }
 
 }
