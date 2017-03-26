@@ -68,6 +68,7 @@ bot.dialog('/', [
     },
    function (session, results) {
       session.beginDialong('/getRecipe2');
+   }
 ]);
 
 bot.dialog('/askItem', [
