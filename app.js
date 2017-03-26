@@ -258,7 +258,7 @@ bot.dialog('/askDiet', [
 
 bot.dialog('/askAllergy', [
     function (session) {
-        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "Dairy|Gluten|Peanut|Shellfish|Seafood");
+        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "No|Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
     function (session, results) {
         allergy = session.message.text.toLowerCase();
