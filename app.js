@@ -1,5 +1,6 @@
 var restify = require('restify');
 var builder = require('botbuilder');
+var unirest = require('unirest');
 
 //=========================================================
 // Bot Setup
@@ -25,5 +26,15 @@ server.post('/api/messages', connector.listen());
 
 bot.dialog('/', function (session) {
     session.send("Hello World");
-    session.send(session.message.text.length);
+    session.send("Hi");
+
+    // These code snippets use an open-source library. http://unirest.io/nodejs
+    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?fillIngredients=false&ingredients=apples%2Cflour%2Csugar&limitLicense=false&number=3&ranking=1")
+    .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
+    .header("Accept", "application/json")
+    .end(function (result) {
+    console.log(result.status, result.headers, result.body);
+});
+ session.send(response.body);
+
 });
