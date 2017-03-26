@@ -5,13 +5,133 @@ An recipe recommender bot for the Microsoft Bot Framework.
 // This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
+
 var restify = require('restify');
 var builder = require('botbuilder');
 var unirest = require('unirest');
-var url = require('url');
 var validUrl = require('valid-url');
 var captionService = require('./caption-service');
 var needle = require('needle');
+
+"use strict";
+var documentClient = require("documentdb").DocumentClient;
+var config = require("./config");
+var url = require('url');
+
+//=========================================================
+// Database Setup
+//=========================================================
+
+// Setup DocumentDB 
+var client = new documentClient(config.endpoint, { "masterKey": config.primaryKey });
+
+// Create Node database
+var HttpStatusCodes = { NOTFOUND: 404 };
+var databaseUrl = `dbs/${config.database.id}`;
+var collectionUrl = `${databaseUrl}/colls/${config.collection.id}`;
+
+// Return database if it exists, else create the database
+function getDatabase() {
+    console.log(`Getting database:\n${config.database.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readDatabase(databaseUrl, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createDatabase(config.database, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function getCollection() {
+    console.log(`Getting collection:\n${config.collection.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readCollection(collectionUrl, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createCollection(databaseUrl, config.collection, { offerThroughput: 400 }, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function getDocument(document) {
+    let documentUrl = `${collectionUrl}/docs/${document.id}`;
+    console.log(`Getting document:\n${document.id}\n`);
+
+    return new Promise((resolve, reject) => {
+        client.readDocument(documentUrl, { partitionKey: document.district }, (err, result) => {
+            if (err) {
+                if (err.code == HttpStatusCodes.NOTFOUND) {
+                    client.createDocument(collectionUrl, document, (err, created) => {
+                        if (err) reject(err)
+                        else resolve(created);
+                    });
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(result);
+            }
+        });
+    });
+};
+
+function queryCollection() {
+    console.log(`Querying collection through index:\n${config.collection.id}`);
+
+    return new Promise((resolve, reject) => {
+        client.queryDocuments(
+            collectionUrl,
+            'SELECT VALUE r.children FROM root r WHERE r.lastName = "Andersen"'
+        ).toArray((err, results) => {
+            if (err) reject(err)
+            else {
+                for (var queryResult of results) {
+                    let resultString = JSON.stringify(queryResult);
+                    console.log(`\tQuery returned ${resultString}`);
+                }
+                console.log();
+                resolve(results);
+            }
+        });
+    });
+};
+
+function exit(message) {
+    console.log(message);
+    console.log('Press any key to exit');
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', process.exit.bind(process, 0));
+}
+
+getDatabase()
+.then(() => getCollection())
+.then(() => getDocument(config.documents.Andersen))
+.then(() => getDocument(config.documents.Wakefield))
+.then(() => queryCollection())
+.then(() => { exit(`Completed successfully`); })
+.catch((error) => { exit(`Completed with error ${JSON.stringify(error)}`) });
+
 
 //=========================================================
 // Bot Setup
