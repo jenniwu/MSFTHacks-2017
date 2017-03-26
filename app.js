@@ -28,15 +28,9 @@ var intents = new builder.IntentDialog();
 // Bots Dialogs
 //=========================================================
 
-<<<<<<< HEAD
-// bot.dialog('/', function (session) {
-//     session.send("Hello World");
-//     session.send("Bye :P");
-// });
 
-var diet;
-var allergy;
 
+var diet ="";
 
 bot.dialog('/', [
     function (session) {
@@ -45,6 +39,11 @@ bot.dialog('/', [
     function (session, results) {
         session.send('You entered ' + session.message.text + '.', results.response.text);
         session.beginDialog('/askDiet');
+    },
+    function (session, results) {
+        session.send('ok', results.response.text);
+        session.send(diet);
+        //session.beginDialog('/askDiet');
     }
 ]);
 bot.dialog('/askItem', [
@@ -61,25 +60,22 @@ bot.dialog('/askDiet', [
         builder.Prompts.text(session, 'Do you have any dietary restrictions?');
     },
     function (session, results) {
-        diet = response;
+        diet = session.message.text;
         session.endDialogWithResult(results);
     }
 ]);
 
+// bot.dialog('/', function (session) {
+//     session.send("Hello World");
+//     session.send("Hi");
 
-=======
-bot.dialog('/', function (session) {
-    session.send("Hello World");
-    session.send("Hi");
+//     // These code snippets use an open-source library. http://unirest.io/nodejs
+//     var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?fillIngredients=false&ingredients=apples%2Cflour%2Csugar&limitLicense=false&number=3&ranking=1")
+//     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
+//     .header("Accept", "application/json")
+//     .end(function (result) {
+//     console.log(result.status, result.headers, result.body);
+// });
+//  session.send(response.body);
 
-    // These code snippets use an open-source library. http://unirest.io/nodejs
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?fillIngredients=false&ingredients=apples%2Cflour%2Csugar&limitLicense=false&number=3&ranking=1")
-    .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
-    .header("Accept", "application/json")
-    .end(function (result) {
-    console.log(result.status, result.headers, result.body);
-});
- session.send(response.body);
-
-});
->>>>>>> origin/master
+// });
