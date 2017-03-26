@@ -270,7 +270,7 @@ bot.dialog('/getRecipe', [
     }, 
     function (session, results) {
         cuisine = session.message.text.toLowerCase();
-        session.endDialog();
+        session.endDialogWithResult(results);
     }
 ]);
 
