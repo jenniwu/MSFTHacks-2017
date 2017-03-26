@@ -169,10 +169,9 @@ bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
-    // function (session, results) {
-    //     session.send('You entered ' + session.message.text + '.', results.response.text);
-    //     session.beginDialog('/askDiet');
-    // },
+     function (session, results) {
+        session.beginDialog('/askDiet');
+     },
     function (session, results) {
         session.beginDialog('/askAllergy');
     },
@@ -244,7 +243,7 @@ function handleSuccessResponse(session, caption) {
         session.send('I think it\'s ' + caption);
         ingredient = caption;
    //     session.userData.food = caption;
-        session.beginDialog('/askDiet');
+        session.endDialog();
     }
     else {
         session.send('Couldn\'t find a caption for this one');
@@ -262,7 +261,7 @@ bot.dialog('/askDiet', [
         builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
     },
     function (session, results) {
-        diet = session.message.text.toLowerCase;
+        diet = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
 ]);
@@ -272,7 +271,7 @@ bot.dialog('/askAllergy', [
         builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
     function (session, results) {
-        allergy = session.message.text.toLowerCase;
+        allergy = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
 ]);
@@ -284,24 +283,10 @@ bot.dialog('/getRecipe', [
     .header("Accept", "application/json")
     .end(function (result){
         console.log(result.body.results);
-        var title = result.body.results[0]["title"];
+        var title = result.body.results[0]["title"].split(" ").join("-");
         var id = result.body.results[0]["id"].toString();
-        session.send("https://spoonacular.com/" + title.split(" ").join("-") + "-" + id);
-        //builder.Prompts.choice(session, 'Would you want to cook this?', "Yes|No");
-    })}
-    // ,
-    // function (session, results) {
-    //     if(session.message.text == "No"){
-    //        session.send("Sorry we couldn't find anything you like yet!")
-    //        builder.Prompts.choice(session, 'What kind of cuisine do you feel like having?', "American|Chinese|Italian|Japanes|Latin American");
-    //     } else{
-    //         session.endDialogWithResult(results);
-    //     }
-    // },
-    // function (session, results) {
-    //     cuisine = session.message.text;
-        
-    // }
+        session.send("https://spoonacular.com/" + title + "-" + id);
+    })}  
 ]);
 
 
