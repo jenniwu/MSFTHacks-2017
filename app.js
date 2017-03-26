@@ -29,6 +29,16 @@ var client = new documentClient(config.endpoint, { "masterKey": config.primaryKe
 var HttpStatusCodes = { NOTFOUND: 404 };
 var databaseUrl = `dbs/${config.database.id}`;
 var collectionUrl = `${databaseUrl}/colls/${config.collection.id}`;
+// var databaseDefinition = {"id": "reciperdatabase"}
+// var collectionDefinition = {"id": "Users"}
+// var documentDefinition = {
+//     "id": "user",
+//     "name": "firstName",
+//     "favourite": {
+//         "recipeTitle": "someurl",
+//         "anotherrecipe": "someurl"
+//     }
+// }
 
 // Return database if it exists, else create the database
 function getDatabase() {
@@ -101,7 +111,7 @@ function queryCollection() {
     return new Promise((resolve, reject) => {
         client.queryDocuments(
             collectionUrl,
-            'SELECT VALUE r.children FROM root r WHERE r.lastName = "Andersen"'
+            'SELECT VALUE r.favourites FROM root r WHERE r.id = "userid"'
         ).toArray((err, results) => {
             if (err) reject(err)
             else {
@@ -126,8 +136,8 @@ function exit(message) {
 
 getDatabase()
 .then(() => getCollection())
-.then(() => getDocument(config.documents.Andersen))
-.then(() => getDocument(config.documents.Wakefield))
+.then(() => getDocument(config.documents.userid))
+.then(() => getDocument(config.documents.anotheruserid))
 .then(() => queryCollection())
 .then(() => { exit(`Completed successfully`); })
 .catch((error) => { exit(`Completed with error ${JSON.stringify(error)}`) });
@@ -169,6 +179,9 @@ bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
+    function (session, results) {
+        session.beginDialog('/getUser');
+    },
     // function (session, results) {
     //     session.send('You entered ' + session.message.text + '.', results.response.text);
     //     session.beginDialog('/askDiet');
@@ -180,6 +193,50 @@ bot.dialog('/', [
         session.beginDialog('/getRecipe');
     }
 ]);
+
+// Get users profile
+bot.dialog('/getUser', [
+    function (session) {
+        console.log("=== DIALOG: GETPROFILE | STEP: 1/1 ====");
+
+        // Store the returned user page-scoped id (USER_ID) and page id
+        session.userData.userid = session.message.sourceEvent.sender.id;
+        session.userData.pageid = session.message.sourceEvent.recipient.id;
+
+        // Let the user know we are 'working'
+        session.sendTyping();
+        // Get the users profile information from FB
+        request({
+            url: 'https://graph.facebook.com/v2.6/'+ session.userData.userid +'?fields=first_name,last_name,profile_pic,locale,timezone,gender',
+            qs: { access_token: process.env.FB_PAGE_ACCESS_TOKEN },
+            method: 'GET'
+        }, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                // Parse the JSON returned from FB
+                body = JSON.parse(body);
+                // Save profile to database
+                // session.dialogData.userId = session.userData.userid;
+                session.dialogData.firstname = body.first_name;
+
+                var userDetails = {
+                    userid: session.userData.userid,
+                    name: session.dialogData.firstname,
+                    favourites: []
+                }
+
+                getDocument(userDetails);
+
+                // Return to beginning
+                session.endDialogWithResult({ response: session.dialogData });
+            } else {
+                // TODO: Handle errors
+                console.log(error);
+                console.log("Get user profile failed");
+            }
+        });
+    }
+]);
+
 bot.dialog('/askItem', [
     function (session) {
         builder.Prompts.text(session, 'Hi! What\'s in your grocery basket? Upload an image and I\'ll find some food to make.');
