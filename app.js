@@ -178,6 +178,12 @@ var moreItems = true;
 
 var cuisine = "";
 
+bot.on('conversationUpdate', function (message) {
+    bot.send(new builder.Message()
+        .address(message.address)
+        .text('Hello! I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.'));
+});
+
 bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
@@ -188,13 +194,10 @@ bot.dialog('/', [
     //         session.beginDialog('/anymoreItems');
     // //    }   
     // },
-    function (session) {
-        session.beginDialog('/askDiet');
-    },
 
-    function (session, results) {
-        session.beginDialog('/getUser');
-    },
+    // function (session, results) {
+    //     session.beginDialog('/getUser');
+    // },
      function (session, results) {
         session.beginDialog('/askDiet');
     },
@@ -246,9 +249,9 @@ bot.dialog('/getUser', [
 ]);
 
 bot.dialog('/askItem', [
-    function (session) {
-        builder.Prompts.attachment(session, 'Hi! What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
-    },
+    // function (session) {
+    //     builder.Prompts.attachment(session, 'What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
+    // },
     function(session) {
         if (hasImageAttachment(session)) {
         var stream = getImageStreamFromMessage(session.message);
@@ -354,12 +357,9 @@ function getImageStreamFromMessage(message) {
 //=========================================================
 function handleSuccessResponse(session, caption) {
     if (caption) {
-        session.send('I think it\'s ' + caption);
+        session.send('I think you sent me a picture of ' + caption + ". Great choice!");
         ingredient = caption;
-<<<<<<< HEAD
    //     session.userData.food = caption;
-=======
->>>>>>> origin/master
         session.endDialog();
     }
     else {
