@@ -163,6 +163,7 @@ var intents = new builder.IntentDialog();
 var diet = "";
 var ingredient = "";
 var allergy = "";
+var cuisine = "";
 
 bot.dialog('/', [
     function (session) {
@@ -257,14 +258,8 @@ function handleErrorResponse(session, error) {
 }
 
 bot.dialog('/askDiet', [
-<<<<<<< HEAD
     function (session, next) {
         builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
-=======
-    function (session) {
-        // session.send(ingredient);
-        builder.Prompts.text(session, 'Do you have any dietary restrictions?');
->>>>>>> origin/master
     },
     function (session, results) {
         diet = session.message.text.toLowerCase;
@@ -292,15 +287,21 @@ bot.dialog('/getRecipe', [
         var title = result.body.results[0]["title"];
         var id = result.body.results[0]["id"].toString();
         session.send("https://spoonacular.com/" + title.split(" ").join("-") + "-" + id);
-        builder.Prompts.choice(session, 'Would you want to cook this?', "Yes|No");
-    })},
-    function (session, results) {
-        if(session.message.text == "No"){
-           // TODO: route to cuisine
-        } else{
-            session.endDialogWithResult(results);
-        }
-    }
+        //builder.Prompts.choice(session, 'Would you want to cook this?', "Yes|No");
+    })}
+    // ,
+    // function (session, results) {
+    //     if(session.message.text == "No"){
+    //        session.send("Sorry we couldn't find anything you like yet!")
+    //        builder.Prompts.choice(session, 'What kind of cuisine do you feel like having?', "American|Chinese|Italian|Japanes|Latin American");
+    //     } else{
+    //         session.endDialogWithResult(results);
+    //     }
+    // },
+    // function (session, results) {
+    //     cuisine = session.message.text;
+        
+    // }
 ]);
 
 
