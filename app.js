@@ -312,7 +312,7 @@ bot.dialog('/getRecipe2', [
          builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
 })},
     function(session, results) {
-        if(session.message.text == "no"){
+        if(session.message.text.toLowerCase() == "no"){
             session.send("Sorry we couldn't find anything for you! You're hard to please!");
             session.endDialog();
         } else{
