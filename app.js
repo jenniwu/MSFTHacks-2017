@@ -45,7 +45,7 @@ var ingredient = "";
 var allergy = "";
 
 var moreItems = true;
-
+var isOver = false;
 var cuisine = "";
 
 bot.dialog('/', [
@@ -67,21 +67,25 @@ bot.dialog('/', [
         session.beginDialog('/getRecipe');
     },
    function (session, results) {
-      session.beginDialong('/getRecipe2');
+       if (isOver == true) {
+           session.endDialog();
+       }else {
+           session.beginDialog('/getRecipe2');
+       }
    }
 ]);
 
 bot.dialog('/askItem', [
+    function (session) {
+        builder.Prompts.attachment(session, "Hello, I\'m ReciperBot! What is in your grocery cart? Upload an image and I will pull a recipe for you!");
+    },
     function(session) {
         if (hasImageAttachment(session)) {
         var stream = getImageStreamFromMessage(session.message);
         captionService
             .getCaptionFromStream(stream)
-            .then(function (caption) { 
-                handleSuccessResponse(session, caption); 
-            })
+            .then(function (caption) { handleSuccessResponse(session, caption); })
             .catch(function (error) { handleErrorResponse(session, error); });
-
         } else {
             var imageUrl = validUrl.isUri(session.message.text) ? session.message.text : null;
             if (imageUrl) {
@@ -253,16 +257,20 @@ bot.dialog('/getRecipe', [
         session.send(msg);
         builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
     })}
-    , function (session, results) {
+    , 
+    function (session, results) {
         if(session.message.text == "No"){
             session.send("Sorry we haven't found anything for you yet!");
             builder.Prompts.choice(session, 'What kind of food were you looking for?', "American|Chinese|Italian|Japanese|Mexican");
         } else{
-            session.send("Great! Click one of the links above to get the recipe to one of these delicious dishes! Happy eating!")
+            session.send("Great! Click one of the links above to get the recipe to one of these delicious dishes! Happy eating!");
+            isOver = true;
+            session.endDialog();
         }
-    }, function (session, results) {
+    }, 
+    function (session, results) {
         cuisine = session.message.text;
-        session.endDialogWithResult(results);
+        session.endDialog();
     }
 ]);
 
@@ -306,10 +314,12 @@ bot.dialog('/getRecipe2', [
     function(session, results) {
         if(session.message.text == "no"){
             session.send("Sorry we couldn't find anything for you! You're hard to please!");
+            session.endDialog();
         } else{
             session.send("Great!")
             session.send("Click one of the links above to get the recipe to one of these delicious dishes!");
             session.send("Happy eating!");
+            session.endDialog();
         }
     }
 ]);
