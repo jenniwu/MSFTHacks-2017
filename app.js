@@ -88,6 +88,49 @@ bot.dialog('/askItem', [
     }
 ]);
 
+function hasImageAttachment(session) {
+    return session.message.attachments.length > 0 &&
+        session.message.attachments[0].contentType.indexOf('image') !== -1;
+}
+
+function getImageStreamFromMessage(message) {
+    var headers = {};
+    var attachment = message.attachments[0];
+    // if (checkRequiresToken(message)) {
+    //     // The Skype attachment URLs are secured by JwtToken,
+    //     // you should set the JwtToken of your bot as the authorization header for the GET request your bot initiates to fetch the image.
+    //     // https://github.com/Microsoft/BotBuilder/issues/662
+    //     connector.getAccessToken(function (error, token) {
+    //         var tok = token;
+    //         headers['Authorization'] = 'Bearer ' + token;
+    //         headers['Content-Type'] = 'application/octet-stream';
+
+    //         return needle.get(attachment.contentUrl, { headers: headers });
+    //     });
+    // }
+
+    headers['Content-Type'] = attachment.contentType;
+    return needle.get(attachment.contentUrl, { headers: headers });
+}
+
+//=========================================================
+// Response Handling
+//=========================================================
+function handleSuccessResponse(session, caption) {
+    if (caption) {
+        session.send('I think it\'s ' + caption);
+    }
+    else {
+        session.send('Couldn\'t find a caption for this one');
+    }
+
+}
+
+function handleErrorResponse(session, error) {
+    session.send('Oops! Something went wrong. Try again later.');
+    console.error(error);
+}
+
 bot.dialog('/askDiet', [
     function (session) {
         builder.Prompts.text(session, 'Do you have any dietary restrictions?');
