@@ -40,7 +40,9 @@ var intents = new builder.IntentDialog();
 // Bots Dialogs
 //=========================================================
 
-var diet ="";
+var diet = "";
+var ingredient = "";
+var allergy = "";
 
 bot.dialog('/', [
     function (session) {
@@ -51,9 +53,10 @@ bot.dialog('/', [
         session.beginDialog('/askDiet');
     },
     function (session, results) {
-        session.send('ok', results.response.text);
-        session.send(diet);
-        //session.beginDialog('/askDiet');
+        session.beginDialog('/askAllergy');
+    },
+    function (session, results) {
+        session.beginDialog('/getRecipe');
     }
 ]);
 bot.dialog('/askItem', [
@@ -80,6 +83,7 @@ bot.dialog('/askItem', [
         }
     },
     function (session, results) {
+        ingredient = session.message.text;
         session.endDialogWithResult(results);
     }
 ]);
@@ -94,6 +98,26 @@ bot.dialog('/askDiet', [
     }
 ]);
 
+bot.dialog('/askAllergy', [
+    function (session) {
+        builder.Prompts.text(session, 'Do you have any allergies or intolerances?');
+    },
+    function (session, results) {
+        allergy = session.message.text;
+        session.endDialogWithResult(results);
+    }
+]);
+
+bot.dialog('/getRecipe', [
+    function (session) {
+    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy)
+    .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
+    .header("Accept", "application/json")
+    .end(function (result) {
+    console.log(result.status, result.headers, result.body);
+})}
+]);
+
 // bot.dialog('/', function (session) {
 //     session.send("Hello World");
 //     session.send("Hi");
@@ -106,6 +130,4 @@ bot.dialog('/askDiet', [
 //     console.log(result.status, result.headers, result.body);
 // });
 //  session.send(response.body);
-
-// });
-
+// ]);
