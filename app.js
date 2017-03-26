@@ -167,19 +167,19 @@ var moreItems = true;
 
 var cuisine = "";
 
-bot.on('conversationUpdate', function (message) {
-    bot.send(new builder.Message()
-        .address(message.address)
-        .text('Hello! I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.'));
-});
+// bot.on('conversationUpdate', function (message) {
+//     bot.send(new builder.Message()
+//         .address(message.address)
+//         .text('Hello! I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.'));
+// });
 
 bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
-    // function (session, results) {
-    //     session.beginDialog('/getUser');
-    // },
+    function (session, results) {
+        session.beginDialog('/getUser');
+    },
 
     // function (session) {
     // //    while (moreItems == true) {
@@ -187,9 +187,6 @@ bot.dialog('/', [
     // //    }   
     // },
 
-    // function (session, results) {
-    //     session.beginDialog('/getUser');
-    // },
 
      function (session, results) {
         session.beginDialog('/askDiet');
@@ -242,9 +239,9 @@ bot.dialog('/', [
 // ]);
 
 bot.dialog('/askItem', [
-    // function (session) {
-    //     builder.Prompts.attachment(session, 'What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
-    // },
+    function (session) {
+        builder.Prompts.attachment(session, 'Hello, I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
+    },
     function(session) {
         if (hasImageAttachment(session)) {
         var stream = getImageStreamFromMessage(session.message);
