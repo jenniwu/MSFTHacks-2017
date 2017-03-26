@@ -57,45 +57,44 @@ bot.dialog('/askItem', [
 ]);
 
 bot.dialog('/askDiet', [
-    function (session) {
-        builder.Prompts.text(session, 'Do you have any dietary restrictions?');
+    function (session, next) {
+        builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
     },
     function (session, results) {
-        diet = session.message.text;
+        diet = session.message.text.toLowerCase;
         session.endDialogWithResult(results);
     }
 ]);
 
 bot.dialog('/askAllergy', [
     function (session) {
-        builder.Prompts.text(session, 'Do you have any allergies or intolerances?');
+        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
     function (session, results) {
-        allergy = session.message.text;
+        allergy = session.message.text.toLowerCase;
         session.endDialogWithResult(results);
     }
 ]);
 
 bot.dialog('/getRecipe', [
     function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy)
+    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=1")
     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
     .header("Accept", "application/json")
-    .end(function (result) {
-    console.log(result.status, result.headers, result.body);
-})}
+    .end(function (result){
+        console.log(result.body.results);
+        var title = result.body.results[0]["title"];
+        var id = result.body.results[0]["id"].toString();
+        session.send("https://spoonacular.com/" + title.split(" ").join("-") + "-" + id);
+        builder.Prompts.choice(session, 'Would you want to cook this?', "Yes|No");
+    })},
+    function (session, results) {
+        if(session.message.text == "No"){
+           // TODO: route to cuisine
+        } else{
+            session.endDialogWithResult(results);
+        }
+    }
 ]);
 
-// bot.dialog('/', function (session) {
-//     session.send("Hello World");
-//     session.send("Hi");
 
-//     // These code snippets use an open-source library. http://unirest.io/nodejs
-//     var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/findByIngredients?fillIngredients=false&ingredients=apples%2Cflour%2Csugar&limitLicense=false&number=3&ranking=1")
-//     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
-//     .header("Accept", "application/json")
-//     .end(function (result) {
-//     console.log(result.status, result.headers, result.body);
-// });
-//  session.send(response.body);
-// ]);
