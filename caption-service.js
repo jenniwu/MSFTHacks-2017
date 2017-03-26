@@ -70,8 +70,8 @@ exports.getCaptionFromUrl = function (url) {
  * @return {string} Description if caption found, null otherwise.
  */
 function extractCaption(body) {
-    if (body && body.description && body.description.captions && body.description.captions.length) {
-        return body.description.captions[0].text;
+    if (body && body.description && body.description.tags && body.description.tags.length) {
+        return body.description.tags[0];
     }
 
     return null;
