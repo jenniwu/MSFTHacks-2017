@@ -48,60 +48,27 @@ var moreItems = true;
 
 var cuisine = "";
 
-// bot.on('conversationUpdate', function (message) {
-//     bot.send(new builder.Message()
-//         .address(message.address)
-//         .text('Hello! I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.'));
-// });
-
 bot.dialog('/', [
     function (session) {
         session.beginDialog('/askItem');
     },
-<<<<<<< HEAD
-    function (session) {
-        session.beginDialog('/getUser');
-    },
-=======
-
-
-     function (session, results) {
-        session.beginDialog('/askDiet');
-     },
-
-    //  function (session, results) {
-    //      session.beginDialog('/getUser');
-    //  },
-
->>>>>>> origin/master
     // function (session) {
     // //    while (moreItems == true) {
     //         session.beginDialog('/anymoreItems');
     // //    }   
     // },
-<<<<<<< HEAD
      function (session, results) {
         session.beginDialog('/askDiet');
     },
-=======
-
-
->>>>>>> origin/master
     function (session, results) {
         session.beginDialog('/askAllergy');
     },
     function (session, results) {
         session.beginDialog('/getRecipe');
-    },
-    function (session, results) {
-        session.beginDialog('/getRecipe2');
     }
 ]);
 
 bot.dialog('/askItem', [
-    function (session) {
-        builder.Prompts.attachment(session, 'Hello, I\'m ReciperBot. What\'s in your grocery basket? Upload an image and I\'ll build a recipe for you.');
-    },
     function(session) {
         if (hasImageAttachment(session)) {
         var stream = getImageStreamFromMessage(session.message);
@@ -128,28 +95,6 @@ bot.dialog('/askItem', [
         session.endDialogWithResult(results);
     }
 ]);
-
-bot.dialog('/getUser', [
-    function (session) {
-        var uid = "";
-        FB.getLoginStatus(function(response) {
-            if (response.status === 'connected') {
-                // the user is logged in and has authenticated your
-                // app, and response.authResponse supplies
-                // the user's ID, a valid access token, a signed
-                // request, and the time the access token 
-                // and signed request each expire
-                uid = response.authResponse.userID;
-                var accessToken = response.authResponse.accessToken;
-                session.send(uid);
-            } else if (response.status === 'not_authorized') {
-            // the user is logged in to Facebook, 
-            // but has not authenticated your app
-            } else {
-            // the user isn't logged in to Facebook.
-        }
-    })
-}]);
 
 // bot.dialog('/anymoreItems', [
 //     function (session) {
@@ -246,6 +191,8 @@ function handleErrorResponse(session, error) {
 }
 
 bot.dialog('/askDiet', [
+
+
     function (session, next) {
         builder.Prompts.choice(session, "Do you have any dietary restrictions?", "No|Vegan|Vegetarian|Paleo");
 
@@ -258,7 +205,7 @@ bot.dialog('/askDiet', [
 
 bot.dialog('/askAllergy', [
     function (session) {
-        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "No|Dairy|Gluten|Peanut|Shellfish|Seafood");
+        builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
     function (session, results) {
         allergy = session.message.text.toLowerCase();
@@ -268,100 +215,15 @@ bot.dialog('/askAllergy', [
 
 bot.dialog('/getRecipe', [
     function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=5")
+    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=1")
     .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
     .header("Accept", "application/json")
     .end(function (result){
-        // console.log(result.body.results);
-        // var title = result.body.results[0]["title"].split(" ").join("-");
-        // var id = result.body.results[0]["id"].toString();
-        // session.send("https://spoonacular.com/" + title + "-" + id);
-        var str = JSON.stringify(result.body.results).split(",");
-    
-    var buttons = [];
-    var imgs= [];
-    
-    for (i = 0; i < str.length; i++) { 
-         if (str[i].includes("id")) {
-            var id = str[i].split(":")[1].toString();
-            
-        }
-        if (str[i].includes("title")) {
-            var title = str[i].split(":")[1].split(" ").join("-").replace(/["]/g, "");
-            var out = "https://spoonacular.com/"+title+"-"+id
-            buttons.push(builder.CardAction.openUrl(session, out, title.replace(/[-]/g, " ")));
-            imgs.push(builder.CardImage.create(session, 'https://spoonacular.com/recipeImages/'+id+'-240x150.jpg'));
-        }  
-    }
-
-        var card = new builder.HeroCard(session)
-        .text('Spoonalicious choices')
-        .buttons(buttons)
-        .images(imgs);
-
-        var msg = new builder.Message(session).addAttachment(card);
-        session.send(msg);
-        builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
-    })}
-    , function (session, results) {
-        if(session.message.text == "No"){
-            session.send("Sorry we haven't found anything for you yet!");
-            builder.Prompts.choice(session, 'What kind of food were you looking for?', "American|Chinese|Italian|Japanese|Mexican");
-        } else{
-            session.send("Great! Click one of the links above to get the recipe to one of these delicious dishes! Happy eating!")
-        }
-    }, function (session, results) {
-        cuisine = session.message.text;
-        session.endDialogWithResult(results);
-    }
-]);
-
-bot.dialog('/getRecipe2', [
-    function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?cuisine=" + cuisine + "&diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=1")
-    .header("X-Mashape-Key", "WCA4DSnFmCmshXuAjT1RGfn4y4otp1rE9vujsn1baVic83L2xV")
-    .header("Accept", "application/json")
-    .end(function (result){
-        // console.log(result.body.results);
-        // var title = result.body.results[0]["title"].split(" ").join("-");
-        // var id = result.body.results[0]["id"].toString();
-        // session.send("https://spoonacular.com/" + title + "-" + id);
-        var str = JSON.stringify(result.body.results).split(",");
-    
-    var buttons = [];
-    var imgs= [];
-    
-    for (i = 0; i < str.length; i++) { 
-         if (str[i].includes("id")) {
-            var id = str[i].split(":")[1].toString();
-            
-        }
-        if (str[i].includes("title")) {
-            var title = str[i].split(":")[1].split(" ").join("-").replace(/["]/g, "");
-            var out = "https://spoonacular.com/"+title+"-"+id
-            buttons.push(builder.CardAction.openUrl(session, out, title.replace(/[-]/g, " ")));
-            imgs.push(builder.CardImage.create(session, 'https://spoonacular.com/recipeImages/'+id+'-240x150.jpg'));
-        }  
-    }
-
-        var card = new builder.HeroCard(session)
-        .text('Spoonalicious choices')
-        .buttons(buttons)
-        .images(imgs);
-
-        var msg = new builder.Message(session).addAttachment(card);
-        session.send(msg);
-         builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
-})},
-    function(session, results) {
-        if(session.message.text == "no"){
-            session.send("Sorry we couldn't find anything for you! You're hard to please!");
-        } else{
-            session.send("Great!")
-            session.send("Click one of the links above to get the recipe to one of these delicious dishes!");
-            session.send("Happy eating!");
-        }
-    }
+        console.log(result.body.results);
+        var title = result.body.results[0]["title"].split(" ").join("-");
+        var id = result.body.results[0]["id"].toString();
+        session.send("https://spoonacular.com/" + title + "-" + id);
+    })}  
 ]);
 
 
