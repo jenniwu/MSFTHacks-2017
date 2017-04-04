@@ -2,6 +2,10 @@
 An recipe recommender bot for the Microsoft Bot Framework. 
 -----------------------------------------------------------------------------*/
 
+// set up jquery
+
+var jsdom = require("jsdom");
+
 // This loads the environment variables from the .env file
 require('dotenv-extended').load();
 
@@ -25,8 +29,8 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
   
 // Create chat bot
 var connector = new builder.ChatConnector({
-    appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD
+    appId: process.env.MICROSOFT_APP_ID, //"O0KvxLOQ1VvNvDVPrFow4y3"
+    appPassword: process.env.MICROSOFT_APP_PASSWORD //"4KqC8cbnXVctWbeeZaA1oqp"
 });
 
 server.post('/api/messages', connector.listen());
@@ -60,9 +64,9 @@ bot.dialog('/', [
      function (session, results) {
         session.beginDialog('/askDiet');
     },
-    function (session, results) {
+  /*  function (session, results) {
         session.beginDialog('/askAllergy');
-    },
+    },*/
     function (session, results) {
         session.beginDialog('/getRecipe');
     },
@@ -210,7 +214,7 @@ bot.dialog('/askDiet', [
     }
 ]);
 
-bot.dialog('/askAllergy', [
+/*bot.dialog('/askAllergy', [
     function (session) {
         builder.Prompts.choice(session, 'Do you have any allergies or intolerances?', "No|Dairy|Gluten|Peanut|Shellfish|Seafood");
     },
@@ -218,46 +222,55 @@ bot.dialog('/askAllergy', [
         allergy = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
-]);
+]);*/
 
 bot.dialog('/getRecipe', [
+    
   function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=5")
-    .header("X-Mashape-Key", "olRjJXA5jsmshyCJwsq8lloLSuAFp13iRe1jsnWSQSUzteNyRT")
-    .header("Accept", "application/json")
-    .end(function (result){
-        // console.log(result.body.results);
-        // var title = result.body.results[0]["title"].split(" ").join("-");
-        // var id = result.body.results[0]["id"].toString();
-        // session.send("https://spoonacular.com/" + title + "-" + id);
-        var str = JSON.stringify(result.body.results).split(",");
-    
-    var buttons = [];
-    var imgs= [];
-    
-    for (i = 0; i < str.length; i++) { 
-         if (str[i].includes("id")) {
-            var id = str[i].split(":")[1].toString();
-            
-        }
-        if (str[i].includes("title")) {
-            var title = str[i].split(":")[1].split(" ").join("-").replace(/["]/g, "");
-            var out = "https://spoonacular.com/"+title+"-"+id
-            buttons.push(builder.CardAction.openUrl(session, out, title.replace(/[-]/g, " ")));
-            imgs.push(builder.CardImage.create(session, 'https://spoonacular.com/recipeImages/'+id+'-240x150.jpg'));
-        }  
-    }
+      var buttons = [];
+      var imgs= [];
 
-        var card = new builder.HeroCard(session)
-        .text('Spoonalicious choices')
-        .buttons(buttons)
-        .images(imgs);
+        jsdom.env("", ["http://code.jquery.com/jquery.min.js"], function(err, window) {
+        var $ = window.$
+        $.support.cors = true;
+        $.ajax({url : 'https://api.edamam.com/search?q='+ingredient+'&app_id=2da1f65c&app_key=3dd95c01edf293a2de896b23fc2b98ba&from=0&to=3&health='+diet,
+                success: function(data) {
+                     
+                     //console.log(data.hits[0].recipe.uri)
+                                 
+                        for (i = 0; i < data.hits.length; i++) { 
+                           
 
-        var msg = new builder.Message(session).addAttachment(card);
-        session.send(msg);
-        builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
-    })}
-    , 
+                                var label = data.hits[i].recipe.label
+                                //console.log(label)
+                                var img = data.hits[i].recipe.image
+                               // console.log(img)
+                                var recipe = data.hits[i].recipe.url
+                                //console.log(recipe)
+
+                                buttons.push(builder.CardAction.openUrl(session, recipe, label));
+                                imgs.push(builder.CardImage.create(session, img));
+
+                            }
+
+                            //console.log(buttons.toString());
+
+                                var card = new builder.HeroCard(session)
+                                .text('Delicious choices')
+                                .buttons(buttons)
+                                .images(imgs);
+
+                                 var msg = new builder.Message(session).addAttachment(card);
+                                 session.send(msg);
+                                 builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
+                        }
+                             
+            })    
+
+     
+        });
+
+  } , 
     function (session, results) {
         if(session.message.text.toLowerCase() == "no"){
             session.send("Sorry we haven't found anything for you yet!");
@@ -272,45 +285,57 @@ bot.dialog('/getRecipe', [
         cuisine = session.message.text.toLowerCase();
         session.endDialogWithResult(results);
     }
+
 ]);
 
+
 bot.dialog('/getRecipe2', [
+    
     function (session) {
-    var response = unirest.get("https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/searchComplex?cuisine=" + cuisine + "&diet=" + diet + "&includeIngredients=" + ingredient + "&intolerances=" + allergy + "&number=5")
-    .header("X-Mashape-Key", "olRjJXA5jsmshyCJwsq8lloLSuAFp13iRe1jsnWSQSUzteNyRT")
-    .header("Accept", "application/json")
-    .end(function (result){
-        // console.log(result.body.results);
-        // var title = result.body.results[0]["title"].split(" ").join("-");
-        // var id = result.body.results[0]["id"].toString();
-        // session.send("https://spoonacular.com/" + title + "-" + id);
-        var str = JSON.stringify(result.body.results).split(",");
-    
-    var buttons = [];
-    var imgs= [];
-    
-    for (i = 0; i < str.length; i++) { 
-         if (str[i].includes("id")) {
-            var id = str[i].split(":")[1].toString();
-            
-        }
-        if (str[i].includes("title")) {
-            var title = str[i].split(":")[1].split(" ").join("-").replace(/["]/g, "");
-            var out = "https://spoonacular.com/"+title+"-"+id
-            buttons.push(builder.CardAction.openUrl(session, out, title.replace(/[-]/g, " ")));
-            imgs.push(builder.CardImage.create(session, 'https://spoonacular.com/recipeImages/'+id+'-240x150.jpg'));
-        }  
-    }
+      var buttons = [];
+      var imgs= [];
 
-        var card = new builder.HeroCard(session)
-        .text('Spoonalicious choices')
-        .buttons(buttons)
-        .images(imgs);
+        jsdom.env("", ["http://code.jquery.com/jquery.min.js"], function(err, window) {
+        var $ = window.$
+        $.support.cors = true;
+        $.ajax({url : 'https://api.edamam.com/search?q='+ingredient+'&app_id=2da1f65c&app_key=3dd95c01edf293a2de896b23fc2b98ba&from=0&to=6&health='+diet,
+                success: function(data) {
+                     
+                     //console.log(data.hits[0].recipe.uri)
+                                 
+                        for (i = 3; i < data.hits.length; i++) { 
+                           
 
-        var msg = new builder.Message(session).addAttachment(card);
-        session.send(msg);
-         builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
-})},
+                                var label = data.hits[i].recipe.label
+                                //console.log(label)
+                                var img = data.hits[i].recipe.image
+                               // console.log(img)
+                                var recipe = data.hits[i].recipe.url
+                                //console.log(recipe)
+
+                                buttons.push(builder.CardAction.openUrl(session, recipe, label));
+                                imgs.push(builder.CardImage.create(session, img));
+
+                            }
+
+                            //console.log(buttons.toString());
+
+                                var card = new builder.HeroCard(session)
+                                .text('Delicious choices')
+                                .buttons(buttons)
+                                .images(imgs);
+
+                                 var msg = new builder.Message(session).addAttachment(card);
+                                 session.send(msg);
+                                 builder.Prompts.choice(session, 'Would you like to try one of those recipes?', "Yes|No");
+                        }
+                             
+            })    
+
+     
+        });
+
+  },
     function(session, results) {
         if(session.message.text.toLowerCase() == "no"){
             session.send("Sorry we couldn't find anything for you! You're hard to please!");
@@ -323,6 +348,3 @@ bot.dialog('/getRecipe2', [
         }
     }
 ]);
-
-
-
