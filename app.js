@@ -33,7 +33,7 @@ var connector = new builder.ChatConnector({
     appPassword: process.env.MICROSOFT_APP_PASSWORD //"4KqC8cbnXVctWbeeZaA1oqp"
 });
 
-server.post('/api/messages', connector.listen());
+server.post('https://mshacks.azurewebsites.net/api/messages', connector.listen());
 var bot = new builder.UniversalBot(connector);
 
 var intents = new builder.IntentDialog();
